@@ -1,0 +1,159 @@
+pipeline {
+    agent {label 'agent-1'}
+    
+    environment {
+        GIT_REPO_URL_SSH = 'git@github.com:MarkeyBass/todos-docker-compose.git'
+        
+        AWS_CREDENTIALS = 'awscredentials'
+        AWS_BUCKET = 'devops-p1-bucket'
+        AWS_DYNAMO_DB_TABLE = 'todos-test-results'
+
+        DEPLOY_JOB_ON_SUCCESS = 'todos-deploy-to-prod'
+    }
+    
+    stages {
+        stage('CHECKOUT SCM') {
+            steps {
+                sshagent(credentials: ['controller-node']) {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: 'main']],
+                        userRemoteConfigs: [[
+                            url: "${GIT_REPO_URL_SSH}",
+                            credentialsId: 'controller-node'
+                        ]]
+                    ])
+                }
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                sh 'sudo docker compose down'
+                sh 'sudo docker compose up -d'
+            }
+        }
+       
+        stage('Test') {
+            steps {
+                sh 'sudo docker compose exec server python test_server.py > test-results.txt 2>&1'
+                sh 'cat test-results.txt'
+                script {
+                    def fileContents = readFile(file: 'test-results.txt', encoding: 'UTF-8').trim()
+                    def lines = fileContents.split('\n')
+                    def test_statistics = lines[2].trim()
+                    def test_status = lines[4].trim()
+                
+                    
+                    def testMap = [:]
+                    testMap['username'] = "${env.owner}"
+                    testMap['timestamp'] = new Date().getTime()
+                    testMap['datetime'] = new Date(testMap['timestamp']).toString()
+                    testMap['test_statistics'] = test_statistics
+                    testMap['test_status'] = test_status
+        
+                    def jsonString = groovy.json.JsonOutput.toJson(testMap)
+                    writeFile file: 'test-results.json', text: jsonString
+        
+                    println(jsonString)
+        
+                    def csvString = "username,timestamp,datetime,test_statistics,test_status\n"
+                    csvString += "${testMap['username']},${testMap['timestamp']},${testMap['datetime']},${testMap['test_statistics']},${testMap['test_status']}\n"
+                    writeFile file: 'test-results.csv', text: csvString
+                }
+            }
+        }
+        
+        stage('Upload Test in csv format to S3') {
+            steps {
+                script {
+                    def timestamp
+                    if (fileExists('test-results.csv')) {
+                        def fileContents = readFile(file: 'test-results.csv', encoding: 'UTF-8').trim()
+                        def lines = fileContents.split('\n')
+                        def csvData = lines[1].trim().split(',')
+                        timestamp = csvData[1].trim()
+                        
+                        
+                        withAWS(credentials: 'awscredentials', region: 'us-east-1') {
+                            s3Upload(
+                                file: "test-results.csv",
+                                bucket: "${AWS_BUCKET}",
+                                path: "test-results-${timestamp}.csv"
+                            )
+                        }                        
+                    } else {
+                        error('No test results file found')
+                    }
+                
+
+                }
+            }
+        }
+
+        stage('Upload Test to DynamoDB') {
+            steps {
+                script {
+                    if (fileExists('test-results.csv')) {
+                        def testResultMap = readJSON file: './test-results.json'
+                        
+                        
+                        def timestamp = testResultMap['timestamp']
+                        def datetime = testResultMap['datetime']
+                        def username = testResultMap['username']
+                        def test_statistics = testResultMap['test_statistics']
+                        def test_status = testResultMap['test_status']
+                        
+                        withAWS(credentials: 'awscredentials', region: 'us-east-1') {
+                            sh """
+                                aws dynamodb put-item \
+                                --table-name "${AWS_DYNAMO_DB_TABLE}" \
+                                --item '{
+                                    \"timestamp\": {\"S\": \"${timestamp}\"}, 
+                                    \"datetime\": {\"S\": \"${datetime}\"}, 
+                                    \"username\": {\"S\": \"${username}\"},
+                                    \"test_statistics\": {\"S\": \"${test_statistics}\"},
+                                    \"test_status\": {\"S\": \"${test_status}\"}
+                                }'
+                            """
+                        }
+                        
+                    } else {
+                        error('No test results file found')
+                    }
+                }
+            }
+        }
+        
+    }
+    
+    post {
+        success {
+            sh 'echo success -----------'
+            
+            build job: "${DEPLOY_JOB_ON_SUCCESS}", wait: false, parameters: [
+                [$class: 'StringParameterValue', name: 'KEY', value: 'BOTH']
+            ]
+            
+            // build job: "${DEPLOY_JOB_ON_SUCCESS}", wait: false
+        }
+        failure {
+
+            sh 'echo faliure -----------'
+        }
+        always {
+            sh "sudo docker compose down"
+            sh """
+                echo "------- END OF PIPELINE ------"
+            """
+            // sh """
+            //     sudo docker stop \$(sudo docker ps -a -q) 
+            //     sudo docker rm \$(sudo docker ps -a -q)
+            //     sudo docker rmi \$(sudo docker images -q) 
+            //     sudo docker volume rm \$(sudo docker volume ls -q) 
+            //     sudo docker system prune -af
+            // """
+            // archiveArtifacts 'test-results.csv'
+        }
+    }
+}

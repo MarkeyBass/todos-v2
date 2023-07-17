@@ -215,8 +215,8 @@ def get_jenkins_users():
 if __name__ == "__main__":
     # run_jenkins_job('todos-deploy-to-prod')
     run_jenkins_job('pyhon_test_job_1')
-    # get_jenkins_job_last_build_info('pyhon_test_job')
     # run_jenkins_job('todos-test-and-deploy-2')
+    # get_jenkins_job_last_build_info('pyhon_test_job')
     # run_jenkins_job('todos-deploy-to-prod')
     #     jenkins_user_assign_roles('new_user_7')
     # create_user('new_user_15', '123456', 'read-build-create')

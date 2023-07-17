@@ -21,7 +21,8 @@ pipeline {
     agent none
 
     environment {
-        GIT_REPO_URL_SSH = 'git@github.com:MarkeyBass/todos-docker-compose.git'
+        // GIT_REPO_URL_SSH = 'git@github.com:MarkeyBass/todos-docker-compose.git'
+        GIT_REPO_URL_SSH = 'git@github.com:MarkeyBass/todos-v2.git'
     }
     
     parameters {

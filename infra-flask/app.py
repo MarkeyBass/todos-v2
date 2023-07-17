@@ -90,19 +90,21 @@ def jenkins_todos_app():
         job_option = request.form.get('job-option')
         print(job_option)
 
+
+
         job_to_build = TEST_AND_PROD_JOB if job_option == "TEST_PROD_BOTH"  else PROD_JOB
         job_param = None if job_option == "TEST_PROD_BOTH" else job_option
 
-        res = run_jenkins_job(job_to_build, {'KEY': job_param})
-        success = res['success']
-        message = res['message']
-        job_url = res['job_url']
+        # res = run_jenkins_job(job_to_build, {'KEY': job_param})
+        res = {'success': 'None', 'message': 'None', 'job_url': 'None'}
+        success = res['success'] or "None" 
+        message = res['message'] or "None" 
+        job_url = res['job_url'] or "None" 
         print(res)
     else:
         job_option = ''
         success = None
         message = None
-        last_build_number = None
         job_url = None
         
 

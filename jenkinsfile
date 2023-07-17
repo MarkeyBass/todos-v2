@@ -9,6 +9,8 @@ pipeline {
         AWS_DYNAMO_DB_TABLE = 'todos-test-results'
 
         DEPLOY_JOB_ON_SUCCESS = 'todos-deploy-to-prod'
+        
+        DOCKERHUB_CREDENTIALS = 'dockerhubcredentials'
     }
     
     stages {
@@ -104,7 +106,7 @@ pipeline {
                         def test_statistics = testResultMap['test_statistics']
                         def test_status = testResultMap['test_status']
                         
-                        withAWS(credentials: 'awscredentials', region: 'us-east-1') {
+                        withAWS(credentials: AWS_CREDENTIALS, region: 'us-east-1') {    
                             sh """
                                 aws dynamodb put-item \
                                 --table-name "${AWS_DYNAMO_DB_TABLE}" \
@@ -131,8 +133,37 @@ pipeline {
         success {
             sh 'echo success -----------'
             
+            sh 'echo Deploy to Dockerhub'
+            sh 'echo =========================='
+
+            withCredentials([
+                usernamePassword(
+                    credentialsId: DOCKERHUB_CREDENTIALS, 
+                    passwordVariable: 'DOCKERHUB_PASSWORD', 
+                    usernameVariable: 'DOCKERHUB_USERNAME'
+            )]) {
+                script {
+                    // Get the current build number
+                    def buildNumber = currentBuild.number
+                    echo "Build Number: ${buildNumber}"
+    
+                    // Build and push the Docker image
+                   
+                    sh "sudo docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD"
+                    sh """
+                        cd server
+                        sudo docker build -t markeybass/todos-server:1.${buildNumber} .
+                        sudo docker tag markeybass/todos-server:1.${buildNumber} markeybass/todos-server:latest
+                        
+                        sudo docker push markeybass/todos-server:1.${buildNumber}
+                        sudo docker push markeybass/todos-server:latest
+                    """
+                }
+            }    
+     
+
             build job: "${DEPLOY_JOB_ON_SUCCESS}", wait: false, parameters: [
-                [$class: 'StringParameterValue', name: 'KEY', value: 'BOTH']
+                [$class: 'StringParameterValue', name: 'KEY', value: 'BOTH'],
             ]
             
             // build job: "${DEPLOY_JOB_ON_SUCCESS}", wait: false

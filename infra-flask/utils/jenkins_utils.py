@@ -62,7 +62,7 @@ def get_jenkins_job_last_build_info(job_name):
     
 
 
-def run_jenkins_job(job_name, parameters=None):
+def run_jenkins_job(job_name: str, parameters: dict = None):
    
     try:
         jenkins_client.get_whoami()
@@ -71,7 +71,7 @@ def run_jenkins_job(job_name, parameters=None):
         return {'message': f"Error connecting to Jenkins: {str(err)}", 'success': False}, 
 
     try:
-        job_start_log = jenkins_client.build_job(job_name, parameters=None)
+        job_start_log = jenkins_client.build_job(job_name, parameters)
         print("===== START LOG =====", job_start_log, "has job started",type(job_start_log) == int)
         if not isinstance(job_start_log, int):
             raise TypeError("The job starting log returned an unexpected value type")
@@ -213,8 +213,8 @@ def get_jenkins_users():
 
 
 if __name__ == "__main__":
-    # run_jenkins_job('todos-deploy-to-prod')
-    run_jenkins_job('pyhon_test_job_1')
+    run_jenkins_job('todos-deploy-to-prod', {'KEY': 'ONE'})
+    # run_jenkins_job('pyhon_test_job_1')
     # run_jenkins_job('todos-test-and-deploy-2')
     # get_jenkins_job_last_build_info('pyhon_test_job')
     # run_jenkins_job('todos-deploy-to-prod')

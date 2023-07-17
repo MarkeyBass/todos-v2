@@ -93,13 +93,12 @@ def jenkins_todos_app():
 
 
         job_to_build = TEST_AND_PROD_JOB if job_option == "TEST_PROD_BOTH"  else PROD_JOB
-        job_param = None if job_option == "TEST_PROD_BOTH" else job_option
+        job_params = None if job_option == "TEST_PROD_BOTH" else {'Key': job_option}
 
-        # res = run_jenkins_job(job_to_build, {'KEY': job_param})
-        res = {'success': 'None', 'message': 'None', 'job_url': 'None'}
-        success = res['success'] or "None" 
-        message = res['message'] or "None" 
-        job_url = res['job_url'] or "None" 
+        res = run_jenkins_job(job_to_build, job_params)
+        success = res['success'] 
+        message = res['message'] 
+        job_url = res['job_url'] 
         print(res)
     else:
         job_option = ''

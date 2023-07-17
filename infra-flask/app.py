@@ -4,7 +4,7 @@
 # flask db upgrade
 # flask db migrate -m "profile add picture" (create The instance of the database)
 # flask db upgrade
-from utils.jenkins_utils import create_jenkins_job, create_jenkins_user
+from utils.jenkins_utils import create_jenkins_job, create_jenkins_user, get_jenkins_job_last_build_info, run_jenkins_job
 from flask import Flask, render_template, request
 import jenkins
 import json
@@ -73,6 +73,43 @@ def jenkins_user():
 
     return render_template('jenkins_user.html', success=success, message=message, statusCode=statusCode)
 
+@app.route('/jenkins_todos_app', methods=['POST', 'GET'])
+def jenkins_todos_app():
+    
+    TEST_AND_PROD_JOB = 'todos-test-and-deploy-2'
+    PROD_JOB = 'todos-deploy-to-prod'
+    
+    success = None
+    message = None
+
+
+    test_and_prod_last_build = get_jenkins_job_last_build_info(TEST_AND_PROD_JOB)  or { 'number': 0 }
+    prod_last_build = get_jenkins_job_last_build_info(PROD_JOB) or { 'number': 0 }
+
+    if request.method == 'POST':
+        job_option = request.form.get('job-option')
+        print(job_option)
+
+        job_to_build = TEST_AND_PROD_JOB if job_option == "TEST_PROD_BOTH"  else PROD_JOB
+        job_param = None if job_option == "TEST_PROD_BOTH" else job_option
+
+        res = run_jenkins_job(job_to_build, {'KEY': job_param})
+        success = res['success']
+        message = res['message']
+        job_url = res['job_url']
+        print(res)
+    else:
+        job_option = ''
+        success = None
+        message = None
+        last_build_number = None
+        job_url = None
+        
+
+    return render_template('jenkins_todos_app.html', 
+                           success=success, message=message,
+                           test_and_prod_last_build=test_and_prod_last_build, prod_last_build=prod_last_build,
+                           job_url=job_url)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,8 @@
 # pip install python-jenkins
 # pip install beautifulsoup4
+
+import time
+
 import jenkins
 import requests
 from typing import List
@@ -51,6 +54,42 @@ def create_jenkins_job(job_name: str, job_description: str, job_commands: List[s
     jenkins_client.create_job(job_name, config)
     create_info = jenkins_client.get_job_info(job_name)
     return create_info
+
+
+def get_jenkins_job_last_build_info(job_name):
+    job_info = jenkins_client.get_job_info(job_name)
+    return job_info['lastCompletedBuild']
+    
+
+
+def run_jenkins_job(job_name, parameters=None):
+   
+    try:
+        jenkins_client.get_whoami()
+        jenkins_client.get_version()
+    except Exception as err:
+        return {'message': f"Error connecting to Jenkins: {str(err)}", 'success': False}, 
+
+    try:
+        job_start_log = jenkins_client.build_job(job_name, parameters=None)
+        print("===== START LOG =====", job_start_log, "has job started",type(job_start_log) == int)
+        if not isinstance(job_start_log, int):
+            raise TypeError("The job starting log returned an unexpected value type")
+        job_info = jenkins_client.get_job_info(job_name)
+
+        job_path = job_info['url'].split('/')[3] + '/' + job_info['url'].split('/')[4]
+        job_url = JENKINS_URL + job_path
+
+        print('===== job_url =====', job_url)
+
+
+        return {
+            'message': f'Job nomber {job_info["lastCompletedBuild"]["number"] + 1} have started successfully. \nplease check the link for more info {job_info["url"]}', 
+            'job_url': job_url,
+            'success': True 
+        }
+    except TypeError as err:
+        return {'message': f"Error - Job Failed to start: {str(err)}", 'success': False}
 
 
 def create_jenkins_user(username: str, password: str, role: str = None):
@@ -174,13 +213,15 @@ def get_jenkins_users():
 
 
 if __name__ == "__main__":
+    # run_jenkins_job('todos-deploy-to-prod')
+    run_jenkins_job('pyhon_test_job_1')
+    # get_jenkins_job_last_build_info('pyhon_test_job')
+    # run_jenkins_job('todos-test-and-deploy-2')
+    # run_jenkins_job('todos-deploy-to-prod')
     #     jenkins_user_assign_roles('new_user_7')
     # create_user('new_user_15', '123456', 'read-build-create')
-    create_jenkins_user('new_user_16', '123456', 'read-build-createjhksfdjukhsdf')
+    # create_jenkins_user('new_user_16', '123456', 'read-build-createjhksfdjukhsdf')
     # create_jenkins_job("python-test-1", "bla bla", ["echo Hello world"])
     # create_jenkins_job("python-test-1", "bla bla", ["echo Hello world", "pwd", "ls -la"])
-
-
-# if __name__ == "__main__":
     # jenkins_user_assign_roles('new_user_7')
     # get_jenkins_users()

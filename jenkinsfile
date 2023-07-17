@@ -143,6 +143,9 @@ pipeline {
         }
         always {
             sh "sudo docker compose down"
+            // sh "sudo docker rmi \$(sudo docker images -q)"
+            // sh "sudo docker volume rm \$(sudo docker volume ls -q)"
+            // sh "sudo docker system prune -af"
             sh """
                 echo "------- END OF PIPELINE ------"
             """

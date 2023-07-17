@@ -13,7 +13,8 @@ def gitCheckoutSCM(gitRepoUrl) {
 
 def deployToProd() {
     sh 'sudo docker compose -f docker-compose-prod.yml down'
-    sh 'sudo docker compose -f docker-compose-prod.yml up -d'
+    sh 'sudo docker compose -f docker-compose.pub.yml down'
+    sh 'sudo docker compose -f docker-compose.pub.yml up -d'
 }
 
 pipeline {

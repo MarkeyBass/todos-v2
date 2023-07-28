@@ -5,3 +5,4 @@ flask_sqlalchemy
 flask_marshmallow
 flask_cors
 mysqlclient
+prometheus_flask_exporter

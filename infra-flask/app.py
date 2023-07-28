@@ -5,10 +5,13 @@
 # flask db migrate -m "profile add picture" (create The instance of the database)
 # flask db upgrade
 from utils.jenkins_utils import create_jenkins_job, create_jenkins_user, get_jenkins_job_last_build_info, run_jenkins_job
+from utils.ec2_utils import EC2Manager
+from utils.iam_utils import IamManager
 from flask import Flask, render_template, request
 import jenkins
 import json
 import re
+
 
 app = Flask(__name__)
 
@@ -111,6 +114,94 @@ def jenkins_todos_app():
                            success=success, message=message,
                            test_and_prod_last_build=test_and_prod_last_build, prod_last_build=prod_last_build,
                            job_url=job_url)
+
+@app.route('/ec2', methods=['GET', 'POST'])
+def create_ec2_instance():
+    error = None
+    res_instance_name = "" 
+    res_instance_id = ""
+    res_image_id = "" 
+    res_instance_availability_zone = ""
+    res_instance_type = ""
+
+    if request.method == 'POST':
+        region_name = "us-east-1"
+        security_group_id = "sg-0c71e220b685cc3c4"
+        key_pair_name = "jenkins-controller"
+        iam_instance_profile_arn = None
+        user_data = None
+
+        instance_name = request.form.get('instance_name')
+        instance_type = request.form.get('instance_type')
+        image_id = request.form.get('image_id')
+
+        ec2_manager = EC2Manager(region_name)
+
+        try:
+            res = ec2_manager.create_ec2_instance(instance_type, key_pair_name, image_id, security_group_id,
+                                 instance_name, iam_instance_profile_arn, user_data)
+            
+            res_instance_name = res["instance_name"]
+            res_instance_id = res["instance_id"]
+            res_image_id = res["instance_image_id"]
+            res_instance_availability_zone = res["instance_availability_zone"]
+            res_instance_type = res["instance_type"]
+        
+        except Exception as err:
+            print(err)
+            error=err
+
+
+    return render_template(
+        'ec2.html', 
+        instance_name=res_instance_name, 
+        instance_id=res_instance_id,
+        image_id=res_image_id, 
+        instance_type=res_instance_type, 
+        instance_availability_zone=res_instance_availability_zone,
+        error=error
+        )
+
+@app.route('/iam_user', methods=['GET', 'POST'])
+def iam():
+    res_username = None
+    user_group = None
+    login_link = None
+    access_key_id = None
+    secret_access_key = None
+    error = None
+    error_2 = None
+
+    if request.method == 'POST':
+        usename = request.form['username']
+        password = request.form['password']
+        user_group = request.form['user_group']
+
+        try:
+            iam_manager = IamManager()
+            res = iam_manager.create_iam_user(usename, password, user_group)
+        
+            res_username = res["res_username"]
+            login_link = res["login_link"]
+            access_key_id = res["access_key_id"]
+            secret_access_key = res["secret_access_key"]
+            error = res["error"]
+            error_2 = res["error_2"]
+
+        except Exception as err:
+            error = str(err)
+    
+    return render_template(
+        'iam_user.html', 
+        res_username=res_username, 
+        user_group=user_group, 
+        login_link=login_link, 
+        access_key_id=access_key_id, 
+        secret_access_key=secret_access_key, 
+        error=error,
+        error_2=error_2
+        )
+
 
 
 if __name__ == "__main__":

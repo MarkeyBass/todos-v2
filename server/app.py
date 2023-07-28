@@ -7,7 +7,10 @@ import datetime
 from flask_marshmallow import Marshmallow
 from flask_cors import CORS
 
+from prometheus_flask_exporter import PrometheusMetrics
+
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
 CORS(app)
 
 

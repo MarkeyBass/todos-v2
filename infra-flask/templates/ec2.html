@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create an EC2 Instance</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <style>
+      #ec2-creation-logs {
+        background-color: #f0f0f0;
+        padding: 10px;
+        margin-top: 20px;
+        border-radius: 4px;
+      }
+      .green{
+        padding: 1rem;
+        background-color: rgb(0, 117, 0);
+        color: #f0f0f0;
+        margin: 3px;
+        border-radius: "5px";
+      }
+    </style>
+</head>
+<body>
+    {% include 'partials/navbar.html' %}
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <h1 class="text-center mb-4">EC2 Instance Creation</h1>
+                <form action="/ec2" method="POST">
+
+                    <div class="mb-3">
+                        <label for="instance_name" class="form-label">EC2 Instance Name:</label>
+                        <input type="text" class="form-control" name="instance_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Choose Instance Type:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="instance_type" id="t2_nano" value="t2.nano">
+                            <label class="form-check-label" for="t2_nano">t2.nano</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="instance_type" id="t2_micro" value="t2.micro">
+                            <label class="form-check-label" for="t2_micro">t2.micro</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="instance_type" id="t2_small" value="t2.small">
+                            <label class="form-check-label" for="t2_small">t2.small</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Choose Image:</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="image_id" id="img1" value="ami-053b0d53c279acc90">
+                            <label class="form-check-label" for="img1">Ubuntu Server 22.04 LTS</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="image_id" id="img2" value="ami-0261755bbcb8c4a84">
+                            <label class="form-check-label" for="img2">Ubuntu Server 20.04 LTS</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="image_id" id="img3" value="ami-05548f9cecf47b442">
+                            <label class="form-check-label" for="img3">Amazon Linux 2023 AMI</label>
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <input type="submit" class="btn btn-primary" value="Create EC2 Instance">
+                    </div>
+                </form>
+                
+                <div id="ec2-creation-logs" class="mb-5">
+                    {% if instance_name is defined and instance_name %}
+                        <div class="alert alert-success">
+                            <p><strong>Instance is in the creation proccess...</strong></p>
+                        </div>
+                        <p><strong>Instance Name:</strong> {{ instance_name }}</p>
+                    {% endif %}
+                    {% if instance_id is defined and instance_id %}
+                        <p><strong>Instance Id:</strong> {{ instance_id }}</p>
+                    {% endif %}
+                    {% if image_id is defined and image_id %}
+                        <p><strong>EC2 Image Id:</strong> {{ image_id }}</p>
+                    {% endif %}
+                    {% if instance_type is defined and instance_type %}
+                        <p><strong>EC2 Image Id:</strong> {{ instance_type }}</p>
+                    {% endif %}
+                    {% if instance_availability_zone is defined and instance_availability_zone %}
+                        <p><strong>Availability Zone:</strong> {{ instance_availability_zone }}</p>
+                    {% endif %}
+                
+                    {% if error is defined and error %}
+                        <div class="alert alert-danger">
+                            <p><strong>Error</strong></p>
+                            <pre>{{ error|safe }}</pre>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

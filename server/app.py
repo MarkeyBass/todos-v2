@@ -10,8 +10,9 @@ from flask_cors import CORS
 from prometheus_flask_exporter import PrometheusMetrics
 
 app = Flask(__name__)
-metrics = PrometheusMetrics(app)
 CORS(app)
+
+metrics = PrometheusMetrics(app)
 
 
 MYSQL_HOST = os.environ.get('MYSQL_HOST', 'localhost') # 'mysql'

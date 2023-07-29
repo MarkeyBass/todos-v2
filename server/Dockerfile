@@ -1,5 +1,7 @@
 FROM python:3.9 
 
+ENV FLASK_ENV=production
+
 WORKDIR /app
 
 EXPOSE 5000
